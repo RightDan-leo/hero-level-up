@@ -1,0 +1,416 @@
+{
+  "world": {
+    "width": 820,
+    "height": 1900
+  },
+  "hero": {
+    "startWaypoint": "start",
+    "startPower": 1,
+    "speed": 280
+  },
+  "waypoints": [
+    {
+      "id": "start",
+      "x": 410,
+      "y": 1820
+    },
+    {
+      "id": "AL",
+      "x": 180,
+      "y": 1620
+    },
+    {
+      "id": "AM",
+      "x": 410,
+      "y": 1620
+    },
+    {
+      "id": "AR",
+      "x": 640,
+      "y": 1620
+    },
+    {
+      "id": "BL",
+      "x": 180,
+      "y": 1420
+    },
+    {
+      "id": "BM",
+      "x": 410,
+      "y": 1420
+    },
+    {
+      "id": "BR",
+      "x": 640,
+      "y": 1420
+    },
+    {
+      "id": "CL",
+      "x": 180,
+      "y": 1220
+    },
+    {
+      "id": "CM",
+      "x": 410,
+      "y": 1220
+    },
+    {
+      "id": "CR",
+      "x": 640,
+      "y": 1220
+    },
+    {
+      "id": "DL",
+      "x": 180,
+      "y": 1020
+    },
+    {
+      "id": "DM",
+      "x": 410,
+      "y": 1020
+    },
+    {
+      "id": "DR",
+      "x": 640,
+      "y": 1020
+    },
+    {
+      "id": "EL",
+      "x": 180,
+      "y": 820
+    },
+    {
+      "id": "EM",
+      "x": 410,
+      "y": 820
+    },
+    {
+      "id": "ER",
+      "x": 640,
+      "y": 820
+    },
+    {
+      "id": "FM",
+      "x": 410,
+      "y": 620
+    },
+    {
+      "id": "preBoss",
+      "x": 410,
+      "y": 460
+    },
+    {
+      "id": "boss",
+      "x": 410,
+      "y": 280
+    },
+    {
+      "id": "AR_far",
+      "x": 780,
+      "y": 1620
+    },
+    {
+      "id": "DL_far",
+      "x": 40,
+      "y": 1020
+    },
+    {
+      "id": "ER_far",
+      "x": 780,
+      "y": 820
+    },
+    {
+      "id": "BR_far",
+      "x": 780,
+      "y": 1420
+    },
+    {
+      "id": "CL_far",
+      "x": 40,
+      "y": 1220
+    }
+  ],
+  "edges": [
+    {
+      "a": "start",
+      "b": "AM",
+      "blocker": {
+        "power": 1,
+        "texture": "enemy_beetle",
+        "role": "path"
+      }
+    },
+    {
+      "a": "AL",
+      "b": "AM"
+    },
+    {
+      "a": "AM",
+      "b": "AR"
+    },
+    {
+      "a": "AR",
+      "b": "AR_far",
+      "blocker": {
+        "power": 13,
+        "texture": "enemy_beast",
+        "role": "guard"
+      }
+    },
+    {
+      "a": "AL",
+      "b": "BL",
+      "blocker": {
+        "power": 4,
+        "texture": "enemy_beetle",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "AR",
+      "b": "BR",
+      "blocker": {
+        "power": 2,
+        "texture": "enemy_crab",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "BL",
+      "b": "BM"
+    },
+    {
+      "a": "BM",
+      "b": "BR"
+    },
+    {
+      "a": "BR",
+      "b": "BR_far",
+      "blocker": {
+        "power": 4000,
+        "texture": "enemy_ogre",
+        "role": "guard"
+      }
+    },
+    {
+      "a": "BM",
+      "b": "CM",
+      "blocker": {
+        "power": 8,
+        "texture": "enemy_spider",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "BL",
+      "b": "CL",
+      "blocker": {
+        "power": 9,
+        "texture": "enemy_spider",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "CL",
+      "b": "CM"
+    },
+    {
+      "a": "CM",
+      "b": "CR"
+    },
+    {
+      "a": "CL",
+      "b": "CL_far",
+      "blocker": {
+        "power": 6000,
+        "texture": "enemy_ogre",
+        "role": "guard"
+      }
+    },
+    {
+      "a": "CL",
+      "b": "DL",
+      "blocker": {
+        "power": 16,
+        "texture": "enemy_beast",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "CR",
+      "b": "DR",
+      "blocker": {
+        "power": 28,
+        "texture": "enemy_beast",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "DL",
+      "b": "DM"
+    },
+    {
+      "a": "DM",
+      "b": "DR"
+    },
+    {
+      "a": "DL",
+      "b": "DL_far",
+      "blocker": {
+        "power": 150,
+        "texture": "enemy_ogre",
+        "role": "guard"
+      }
+    },
+    {
+      "a": "DM",
+      "b": "EM",
+      "blocker": {
+        "power": 55,
+        "texture": "enemy_ogre",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "DR",
+      "b": "ER",
+      "blocker": {
+        "power": 70,
+        "texture": "enemy_ogre",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "EL",
+      "b": "EM"
+    },
+    {
+      "a": "EM",
+      "b": "ER"
+    },
+    {
+      "a": "ER",
+      "b": "ER_far",
+      "blocker": {
+        "power": 260,
+        "texture": "enemy_ogre",
+        "role": "guard"
+      }
+    },
+    {
+      "a": "EM",
+      "b": "FM",
+      "blocker": {
+        "power": 110,
+        "texture": "enemy_ogre",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "FM",
+      "b": "preBoss",
+      "blocker": {
+        "power": 200,
+        "texture": "enemy_ogre",
+        "role": "optional"
+      }
+    },
+    {
+      "a": "preBoss",
+      "b": "boss"
+    }
+  ],
+  "decor": [
+    {
+      "x": 295,
+      "y": 1520,
+      "power": 120,
+      "texture": "enemy_spider"
+    },
+    {
+      "x": 525,
+      "y": 1320,
+      "power": 400,
+      "texture": "enemy_crab"
+    },
+    {
+      "x": 295,
+      "y": 1120,
+      "power": 2200,
+      "texture": "enemy_beast"
+    },
+    {
+      "x": 525,
+      "y": 920,
+      "power": 5000,
+      "texture": "enemy_ogre"
+    },
+    {
+      "x": 295,
+      "y": 720,
+      "power": 18000,
+      "texture": "enemy_ogre"
+    }
+  ],
+  "chests": [
+    {
+      "waypoint": "AR_far",
+      "guardPower": 13,
+      "title": "开启宝箱 · 二选一",
+      "options": [
+        {
+          "label": "力量护符",
+          "bonus": 20,
+          "stars": 2
+        },
+        {
+          "label": "狂暴战旗",
+          "bonus": 35,
+          "stars": 3
+        }
+      ]
+    },
+    {
+      "waypoint": "DL_far",
+      "guardPower": 150,
+      "title": "开启宝箱 · 二选一",
+      "options": [
+        {
+          "label": "龙鳞战甲",
+          "bonus": 120,
+          "stars": 2
+        },
+        {
+          "label": "烈焰宝石",
+          "bonus": 200,
+          "stars": 3
+        }
+      ]
+    },
+    {
+      "waypoint": "ER_far",
+      "guardPower": 260,
+      "title": "开启宝箱 · 二选一",
+      "options": [
+        {
+          "label": "泰坦之力",
+          "bonus": 220,
+          "stars": 2
+        },
+        {
+          "label": "巨龙之心",
+          "bonus": 360,
+          "stars": 3
+        }
+      ]
+    }
+  ],
+  "boss": {
+    "waypoint": "boss",
+    "power": 400
+  },
+  "companion": {
+    "x": 525,
+    "y": 360
+  }
+}

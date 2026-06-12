@@ -1,0 +1,16 @@
+美术资源署名 / Art Credits
+================================
+
+精灵素材：Tiny Dungeon (1.0)
+作者：Kenney (https://www.kenney.nl)
+协议：Creative Commons Zero (CC0)
+      http://creativecommons.org/publicdomain/zero/1.0/
+
+可自由用于个人、教育及商业项目。署名非强制，但鼓励标注 Kenney / www.kenney.nl。
+
+本游戏使用的精灵（均裁自 Tiny Dungeon 图块）：
+- hero_0..hero_4   英雄 5 阶进化形态（村民→游侠→骑士→重甲骑士→老将）
+- enemy_*          敌人怪物（甲虫/蜘蛛/蟹/幽灵/野兽/巨兽）
+- boss_skull       火山口 Boss（巨型骷髅）
+- companion        被掳同伴（公主）
+- pickup_potion    战力药水（拾取增益）

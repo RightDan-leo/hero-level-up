@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>地图编辑器 · 战力觉醒岛</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Microsoft YaHei", Arial, sans-serif; background: #0f1623; color: #e6edf3; }
+  header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #16213e; border-bottom: 1px solid #243b66; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 16px; margin: 0; color: #ffd54f; }
+  header .hint { font-size: 12px; color: #8aa0c0; }
+  button { background: #1f3a66; color: #fff; border: 1px solid #2e5aa0; border-radius: 7px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #2a4f8c; }
+  button.primary { background: #2ecc71; border-color: #27ae60; color: #06301a; font-weight: bold; }
+  button.danger { background: #7a2230; border-color: #b0394b; }
+  button.toggle.on { background: #e67e22; border-color: #f0932b; }
+  .wrap { display: flex; gap: 0; align-items: flex-start; }
+  .canvas-col { padding: 14px; overflow: auto; }
+  canvas { background: #2f5d2f; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.4); cursor: crosshair; }
+  .panel { width: 320px; min-height: calc(100vh - 53px); background: #131c2e; border-left: 1px solid #243b66; padding: 14px; }
+  .panel h2 { font-size: 14px; margin: 0 0 10px; color: #ffd54f; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .row label { width: 88px; font-size: 12px; color: #9fb3d1; flex: none; }
+  .row input, .row select { flex: 1; background: #0d1422; color: #e6edf3; border: 1px solid #2e4a7a; border-radius: 6px; padding: 5px 7px; font-size: 13px; width: 100%; }
+  .sec { border-top: 1px solid #243b66; margin-top: 12px; padding-top: 10px; }
+  .muted { color: #6f86a8; font-size: 12px; }
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; color: #fff; }
+  .opts { font-size: 12px; }
+  .opts .row label { width: 54px; }
+  #status { font-size: 12px; color: #8aa0c0; margin-left: auto; }
+  .legend { font-size: 11px; color: #9fb3d1; display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .legend span::before { content: "●"; margin-right: 3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗺️ 地图编辑器</h1>
+  <span class="hint">拖拽节点/怪物移动 · 点击选中后右侧改数值</span>
+  <button id="btnAddDecor" class="toggle">＋ 放置装饰怪</button>
+  <button id="btnReload">重新加载</button>
+  <button id="btnExport">复制 JSON</button>
+  <button id="btnSave" class="primary">保存 ↵</button>
+  <span id="status"></span>
+</header>
+<div class="wrap">
+  <div class="canvas-col">
+    <canvas id="cv"></canvas>
+    <div class="legend">
+      <span style="color:#2ecc71">起点</span>
+      <span style="color:#1d6fd6">主路怪(path)</span>
+      <span style="color:#e67e22">可选怪(optional)</span>
+      <span style="color:#9b59b6">守卫(guard)</span>
+      <span style="color:#7f8c8d">装饰怪</span>
+      <span style="color:#f1c40f">宝箱</span>
+      <span style="color:#e74c3c">Boss</span>
+      <span style="color:#1abc9c">同伴</span>
+    </div>
+  </div>
+  <div class="panel" id="panel"></div>
+</div>
+
+<script>
+const SCALE = 0.5;
+const TEXTURES = ['enemy_beetle', 'enemy_crab', 'enemy_spider', 'enemy_beast', 'enemy_ogre'];
+const ROLES = ['path', 'optional', 'guard'];
+const ROLE_COLOR = { path: '#1d6fd6', optional: '#e67e22', guard: '#9b59b6' };
+
+let data = null;
+let sel = null;       // { kind, ...ref }
+let drag = null;      // { kind, ref, dx, dy }
+let addDecorMode = false;
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const statusEl = document.getElementById('status');
+
+function wpById(id) { return data.waypoints.find((w) => w.id === id); }
+function S(v) { return v * SCALE; }
+function toWorld(px, py) { return { x: Math.round(px / SCALE), y: Math.round(py / SCALE) }; }
+function edgeMid(e) {
+  const A = wpById(e.a), B = wpById(e.b);
+  const t = (e.blocker && typeof e.blocker.at === 'number') ? e.blocker.at : 0.5;
+  return { x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t };
+}
+
+async function load() {
+  const r = await fetch('/__mapedit/api/map');
+  data = await r.json();
+  cv.width = Math.round(data.world.width * SCALE);
+  cv.height = Math.round(data.world.height * SCALE);
+  sel = null;
+  render();
+  renderPanel();
+  setStatus('已加载', '#8aa0c0');
+}
+
+function setStatus(msg, color) { statusEl.textContent = msg; statusEl.style.color = color || '#8aa0c0'; }
+
+// ── 渲染 ──────────────────────────────────────────
+function render() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  // 边（通道）
+  ctx.lineCap = 'round';
+  for (const e of data.edges) {
+    const A = wpById(e.a), B = wpById(e.b);
+    ctx.strokeStyle = '#c2ad77';
+    ctx.lineWidth = 14;
+    ctx.beginPath(); ctx.moveTo(S(A.x), S(A.y)); ctx.lineTo(S(B.x), S(B.y)); ctx.stroke();
+  }
+
+  // 同伴
+  dot(data.companion.x, data.companion.y, 9, '#1abc9c', sel && sel.kind === 'companion');
+
+  // 装饰怪
+  data.decor.forEach((d, i) => {
+    badge(d.x, d.y, '#7f8c8d', d.power, sel && sel.kind === 'decor' && sel.i === i);
+  });
+
+  // waypoints + 特殊标记
+  for (const w of data.waypoints) {
+    const isBoss = data.boss.waypoint === w.id;
+    const isStart = data.hero.startWaypoint === w.id;
+    const chest = data.chests.find((c) => c.waypoint === w.id);
+    let color = '#cbd5e1', r = 6;
+    if (isBoss) { color = '#e74c3c'; r = 11; }
+    else if (isStart) { color = '#2ecc71'; r = 10; }
+    else if (chest) { color = '#f1c40f'; r = 9; }
+    const selected = sel && sel.kind === 'waypoint' && sel.id === w.id;
+    dot(w.x, w.y, r, color, selected);
+    // id 标签
+    ctx.fillStyle = '#0b1018'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(w.id, S(w.x), S(w.y) - r - 3);
+    if (isBoss) tag(w.x, w.y + r + 10, 'Boss ' + data.boss.power, '#e74c3c');
+    if (chest) tag(w.x, w.y + r + 10, '宝箱 ' + chest.guardPower, '#f1c40f');
+  }
+
+  // 边上的挡路怪 / 空边的 + 标记
+  data.edges.forEach((e, i) => {
+    const m = edgeMid(e);
+    const selected = sel && sel.kind === 'edge' && sel.i === i;
+    if (e.blocker) {
+      badge(m.x, m.y, ROLE_COLOR[e.blocker.role] || '#1d6fd6', e.blocker.power, selected);
+    } else {
+      // 空边中点：可点击添加挡路怪
+      ctx.beginPath(); ctx.arc(S(m.x), S(m.y), 7, 0, Math.PI * 2);
+      ctx.fillStyle = selected ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.10)';
+      ctx.fill(); ctx.strokeStyle = '#ffffff80'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#ffffffb0'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('+', S(m.x), S(m.y) + 0.5); ctx.textBaseline = 'alphabetic';
+    }
+  });
+}
+
+function dot(x, y, r, color, selected) {
+  ctx.beginPath(); ctx.arc(S(x), S(y), r, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
+  ctx.lineWidth = selected ? 3 : 1.5; ctx.strokeStyle = selected ? '#fff' : '#0b1018'; ctx.stroke();
+}
+function badge(x, y, color, power, selected) {
+  const r = 13;
+  ctx.beginPath(); ctx.arc(S(x), S(y), r, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
+  ctx.lineWidth = selected ? 3 : 1.5; ctx.strokeStyle = selected ? '#fff' : '#0b1018'; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(power), S(x), S(y)); ctx.textBaseline = 'alphabetic';
+}
+function tag(x, y, text, color) {
+  ctx.fillStyle = color; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(text, S(x), S(y));
+}
+
+// ── 命中测试 ──────────────────────────────────────
+function hit(px, py) {
+  const near = (x, y, r) => Math.hypot(px - S(x), py - S(y)) <= r;
+  // 同伴
+  if (near(data.companion.x, data.companion.y, 11)) return { kind: 'companion' };
+  // 装饰怪
+  for (let i = data.decor.length - 1; i >= 0; i--) { const d = data.decor[i]; if (near(d.x, d.y, 15)) return { kind: 'decor', i }; }
+  // 边中点（怪物/＋）
+  for (let i = 0; i < data.edges.length; i++) { const m = edgeMid(data.edges[i]); if (near(m.x, m.y, 14)) return { kind: 'edge', i }; }
+  // waypoints
+  for (const w of data.waypoints) { if (near(w.x, w.y, 12)) return { kind: 'waypoint', id: w.id }; }
+  return null;
+}
+
+// ── 鼠标交互 ──────────────────────────────────────
+cv.addEventListener('mousedown', (ev) => {
+  const rect = cv.getBoundingClientRect();
+  const px = ev.clientX - rect.left, py = ev.clientY - rect.top;
+
+  if (addDecorMode) {
+    const w = toWorld(px, py);
+    data.decor.push({ x: w.x, y: w.y, power: 100, texture: 'enemy_spider' });
+    sel = { kind: 'decor', i: data.decor.length - 1 };
+    setAddDecor(false); render(); renderPanel(); return;
+  }
+
+  const h = hit(px, py);
+  sel = h;
+  if (h) {
+    if (h.kind === 'waypoint') { const w = wpById(h.id); drag = { kind: 'waypoint', ref: w, dx: px - S(w.x), dy: py - S(w.y) }; }
+    else if (h.kind === 'decor') { const d = data.decor[h.i]; drag = { kind: 'decor', ref: d, dx: px - S(d.x), dy: py - S(d.y) }; }
+    else if (h.kind === 'companion') { drag = { kind: 'companion', ref: data.companion, dx: px - S(data.companion.x), dy: py - S(data.companion.y) }; }
+  }
+  render(); renderPanel();
+});
+window.addEventListener('mousemove', (ev) => {
+  if (!drag) return;
+  const rect = cv.getBoundingClientRect();
+  const px = ev.clientX - rect.left, py = ev.clientY - rect.top;
+  const w = toWorld(px - drag.dx, py - drag.dy);
+  drag.ref.x = Math.max(0, Math.min(data.world.width, w.x));
+  drag.ref.y = Math.max(0, Math.min(data.world.height, w.y));
+  render(); renderPanel();
+});
+window.addEventListener('mouseup', () => { drag = null; });
+
+// ── 右侧面板 ──────────────────────────────────────
+function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
+function field(label, value, onInput, type) {
+  const row = el(`<div class="row"><label>${label}</label></div>`);
+  const inp = document.createElement('input');
+  inp.type = type || 'text'; inp.value = value;
+  inp.addEventListener('input', () => onInput(inp.value));
+  row.appendChild(inp); return row;
+}
+function selectField(label, value, options, onChange) {
+  const row = el(`<div class="row"><label>${label}</label></div>`);
+  const s = document.createElement('select');
+  for (const o of options) { const op = document.createElement('option'); op.value = o; op.textContent = o; if (o === value) op.selected = true; s.appendChild(op); }
+  s.addEventListener('change', () => onChange(s.value));
+  row.appendChild(s); return row;
+}
+
+function renderPanel() {
+  const p = document.getElementById('panel');
+  p.innerHTML = '';
+
+  // 全局
+  const g = el('<div><h2>🌍 世界 / 主角</h2></div>');
+  g.appendChild(field('世界宽', data.world.width, (v) => { data.world.width = +v || 0; cv.width = Math.round(data.world.width * SCALE); render(); }, 'number'));
+  g.appendChild(field('世界高', data.world.height, (v) => { data.world.height = +v || 0; cv.height = Math.round(data.world.height * SCALE); render(); }, 'number'));
+  g.appendChild(field('初始战力', data.hero.startPower, (v) => { data.hero.startPower = +v || 0; }, 'number'));
+  g.appendChild(field('移动速度', data.hero.speed, (v) => { data.hero.speed = +v || 0; }, 'number'));
+  p.appendChild(g);
+
+  if (!sel) { p.appendChild(el('<div class="sec muted">点击画布上的节点 / 怪物 / 宝箱进行编辑；点空边的「＋」可加挡路怪。</div>')); return; }
+
+  if (sel.kind === 'waypoint') renderWaypointPanel(p);
+  else if (sel.kind === 'edge') renderEdgePanel(p);
+  else if (sel.kind === 'decor') renderDecorPanel(p);
+  else if (sel.kind === 'companion') renderCompanionPanel(p);
+}
+
+function renderWaypointPanel(p) {
+  const w = wpById(sel.id);
+  const s = el(`<div class="sec"><h2>📍 节点 ${w.id}</h2></div>`);
+  s.appendChild(field('x', w.x, (v) => { w.x = +v || 0; render(); }, 'number'));
+  s.appendChild(field('y', w.y, (v) => { w.y = +v || 0; render(); }, 'number'));
+  if (data.hero.startWaypoint === w.id) s.appendChild(el('<div class="muted">★ 主角起点</div>'));
+  if (data.boss.waypoint === w.id) {
+    s.appendChild(el('<div class="sec"><b style="color:#e74c3c">🐲 Boss</b></div>'));
+    s.appendChild(field('Boss 战力', data.boss.power, (v) => { data.boss.power = +v || 0; render(); }, 'number'));
+  }
+  const chest = data.chests.find((c) => c.waypoint === w.id);
+  if (chest) {
+    s.appendChild(el('<div class="sec"><b style="color:#f1c40f">🎁 宝箱</b></div>'));
+    s.appendChild(field('守卫战力', chest.guardPower, (v) => { chest.guardPower = +v || 0; render(); }, 'number'));
+    s.appendChild(field('标题', chest.title, (v) => { chest.title = v; }));
+    chest.options.forEach((o, oi) => {
+      const box = el(`<div class="opts sec"><div class="muted">选项 ${oi + 1}</div></div>`);
+      box.appendChild(field('名称', o.label, (v) => { o.label = v; }));
+      box.appendChild(field('加成', o.bonus, (v) => { o.bonus = +v || 0; }, 'number'));
+      box.appendChild(field('星级', o.stars, (v) => { o.stars = +v || 0; }, 'number'));
+      s.appendChild(box);
+    });
+  }
+  p.appendChild(s);
+}
+
+function renderEdgePanel(p) {
+  const e = data.edges[sel.i];
+  const s = el(`<div class="sec"><h2>🛣️ 边 ${e.a} → ${e.b}</h2></div>`);
+  if (!e.blocker) {
+    s.appendChild(el('<div class="muted">该边无挡路怪（开放通道）。</div>'));
+    const btn = el('<button class="primary" style="margin-top:8px">＋ 添加挡路怪</button>');
+    btn.onclick = () => { e.blocker = { power: 10, texture: 'enemy_beetle', role: 'optional', at: 0.5 }; render(); renderPanel(); };
+    s.appendChild(btn);
+  } else {
+    const b = e.blocker;
+    s.appendChild(field('战力', b.power, (v) => { b.power = +v || 0; render(); }, 'number'));
+    s.appendChild(selectField('角色', b.role || 'path', ROLES, (v) => { b.role = v; render(); }));
+    s.appendChild(selectField('贴图', b.texture || TEXTURES[0], TEXTURES, (v) => { b.texture = v; }));
+    s.appendChild(field('位置(0~1)', b.at != null ? b.at : 0.5, (v) => { b.at = Math.max(0, Math.min(1, +v || 0)); render(); }, 'number'));
+    const del = el('<button class="danger" style="margin-top:8px">删除挡路怪</button>');
+    del.onclick = () => { delete e.blocker; render(); renderPanel(); };
+    s.appendChild(del);
+  }
+  p.appendChild(s);
+}
+
+function renderDecorPanel(p) {
+  const d = data.decor[sel.i];
+  const s = el(`<div class="sec"><h2>👻 装饰怪 #${sel.i}</h2></div>`);
+  s.appendChild(field('x', d.x, (v) => { d.x = +v || 0; render(); }, 'number'));
+  s.appendChild(field('y', d.y, (v) => { d.y = +v || 0; render(); }, 'number'));
+  s.appendChild(field('战力', d.power, (v) => { d.power = +v || 0; render(); }, 'number'));
+  s.appendChild(selectField('贴图', d.texture || TEXTURES[0], TEXTURES, (v) => { d.texture = v; }));
+  const del = el('<button class="danger" style="margin-top:8px">删除装饰怪</button>');
+  del.onclick = () => { data.decor.splice(sel.i, 1); sel = null; render(); renderPanel(); };
+  s.appendChild(del);
+  p.appendChild(s);
+}
+
+function renderCompanionPanel(p) {
+  const c = data.companion;
+  const s = el('<div class="sec"><h2>🧝 同伴</h2></div>');
+  s.appendChild(field('x', c.x, (v) => { c.x = +v || 0; render(); }, 'number'));
+  s.appendChild(field('y', c.y, (v) => { c.y = +v || 0; render(); }, 'number'));
+  p.appendChild(s);
+}
+
+// ── 工具栏 ────────────────────────────────────────
+function setAddDecor(on) { addDecorMode = on; document.getElementById('btnAddDecor').classList.toggle('on', on); cv.style.cursor = on ? 'copy' : 'crosshair'; }
+document.getElementById('btnAddDecor').onclick = () => setAddDecor(!addDecorMode);
+document.getElementById('btnReload').onclick = () => load();
+document.getElementById('btnExport').onclick = async () => {
+  await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+  setStatus('JSON 已复制到剪贴板', '#2ecc71');
+};
+async function save() {
+  setStatus('保存中…', '#e67e22');
+  const r = await fetch('/__mapedit/api/map', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  const j = await r.json();
+  if (j.ok) setStatus('✅ 已保存（游戏将热更新）', '#2ecc71');
+  else setStatus('❌ 保存失败：' + j.error, '#e74c3c');
+}
+document.getElementById('btnSave').onclick = save;
+window.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); } });
+
+load();
+</script>
+</body>
+</html>

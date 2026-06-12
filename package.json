@@ -1,0 +1,24 @@
+{
+  "name": "hero-level-up",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "cheerio": "^1.2.0",
+    "p-limit": "^7.3.0",
+    "sharp": "^0.34.5",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "@types/three": "^0.184.1",
+    "phaser": "^4.1.0",
+    "three": "^0.184.0"
+  }
+}

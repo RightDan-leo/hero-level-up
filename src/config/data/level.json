@@ -1,0 +1,23 @@
+{
+  "world": {
+    "laneHalfWidth": 6,
+    "segment": 14
+  },
+  "hero": {
+    "start": { "x": 0, "z": 6 }
+  },
+  "enemies": [
+    { "id": "C1", "power": 4, "x": 0, "z": -8 },
+    { "id": "C2", "power": 8, "x": 0, "z": -22 },
+    { "id": "C3", "power": 15, "x": -4, "z": -36 },
+    { "id": "C4", "power": 28, "x": 4, "z": -50 },
+    { "id": "C5", "power": 55, "x": 0, "z": -64 },
+    { "id": "C6", "power": 100, "x": 0, "z": -78 }
+  ],
+  "boss": { "id": "BOSS", "power": 180, "x": 0, "z": -96 },
+  "cta": {
+    "storeUrl": "https://example.com/download",
+    "title": "兵团觉醒 · 巨龙加冕！",
+    "tagline": "下载游戏，统领万军，释放觉醒巨龙！"
+  }
+}
