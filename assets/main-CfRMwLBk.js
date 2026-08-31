@@ -1,0 +1,1 @@
+import"./level.map-Dt6ZXuPX.js";import{t as e}from"./Game-CiTMU73G.js";var t=document.getElementById(`game-container`);if(!t)throw Error(`#game-container not found`);t.style.position=`relative`,t.style.display=`block`,new e(t);

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>地图编辑器（在线版）· 战力觉醒岛</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Microsoft YaHei", Arial, sans-serif; background: #0f1623; color: #e6edf3; }
+  header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #16213e; border-bottom: 1px solid #243b66; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; color: #ffd54f; }
+  header .hint { font-size: 12px; color: #8aa0c0; }
+  button { background: #1f3a66; color: #fff; border: 1px solid #2e5aa0; border-radius: 7px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #2a4f8c; }
+  button.primary { background: #2ecc71; border-color: #27ae60; color: #06301a; font-weight: bold; }
+  button.danger { background: #7a2230; border-color: #b0394b; }
+  button.toggle.on { background: #e67e22; border-color: #f0932b; }
+  select { background: #0d1422; color: #e6edf3; border: 1px solid #2e5aa0; border-radius: 7px; padding: 6px 10px; font-size: 13px; }
+  .wrap { display: flex; gap: 0; align-items: flex-start; }
+  .canvas-col { padding: 14px; overflow: auto; }
+  canvas { background: #2f5d2f; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.4); cursor: crosshair; }
+  .panel { width: 320px; min-height: calc(100vh - 53px); background: #131c2e; border-left: 1px solid #243b66; padding: 14px; }
+  .panel h2 { font-size: 14px; margin: 0 0 10px; color: #ffd54f; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .row label { width: 88px; font-size: 12px; color: #9fb3d1; flex: none; }
+  .row input, .row select { flex: 1; background: #0d1422; color: #e6edf3; border: 1px solid #2e4a7a; border-radius: 6px; padding: 5px 7px; font-size: 13px; width: 100%; }
+  .sec { border-top: 1px solid #243b66; margin-top: 12px; padding-top: 10px; }
+  .muted { color: #6f86a8; font-size: 12px; }
+  .opts { font-size: 12px; }
+  .opts .row label { width: 54px; }
+  #status { font-size: 12px; color: #8aa0c0; margin-left: auto; }
+  .legend { font-size: 11px; color: #9fb3d1; display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .legend span::before { content: "●"; margin-right: 3px; }
+  .tip { background: #10243a; border: 1px solid #24507e; color: #bcd3ef; font-size: 12px; padding: 8px 12px; margin: 10px 14px 0; border-radius: 8px; }
+</style>
+  <script type="module" crossorigin src="/hero-level-up/assets/mapedit-DbF5vI3B.js"></script>
+  <link rel="modulepreload" crossorigin href="/hero-level-up/assets/level.map-Dt6ZXuPX.js">
+  <link rel="modulepreload" crossorigin href="/hero-level-up/assets/level.hardcore.map-CfZdkxV-.js">
+</head>
+<body>
+<header>
+  <h1>🗺️ 地图编辑器（在线版）</h1>
+  <select id="mapSel" title="选择要编辑的地图">
+    <option value="default">士兵 / 驯兽师（共用图）</option>
+    <option value="hardcore">极限版（独立图）</option>
+  </select>
+  <span class="hint">拖拽移动 · 点击选中改数值 · 连线/节点编辑路网</span>
+  <button id="btnAddNode" class="toggle">＋ 节点</button>
+  <button id="btnAddEdge" class="toggle">＋ 连线</button>
+  <button id="btnAddDecor" class="toggle">＋ 放置装饰怪</button>
+  <button id="btnUndo" title="撤销 (Ctrl+Z)" disabled>↶ 撤销</button>
+  <button id="btnReset" title="恢复为初始内置地图">重置</button>
+  <button id="btnImport" title="导入本地 JSON 文件继续编辑">📥 导入 JSON</button>
+  <button id="btnExport" title="复制当前地图 JSON 到剪贴板">复制 JSON</button>
+  <button id="btnDownload" class="primary" title="下载当前地图 JSON 文件">⬇ 下载 JSON</button>
+  <input id="fileInput" type="file" accept="application/json,.json" style="display:none" />
+  <span id="status"></span>
+</header>
+<div class="tip">在线版：编辑<b>只在你浏览器本地</b>进行，不会写入服务器。调好后点「⬇ 下载 JSON」导出，把文件发回研发放进 <code>src/config/</code> 即生效；也可用「📥 导入 JSON」载入别人发来的地图继续改。</div>
+<div class="wrap">
+  <div class="canvas-col">
+    <canvas id="cv"></canvas>
+    <div class="legend">
+      <span style="color:#2ecc71">起点</span>
+      <span style="color:#1d6fd6">主路怪(path)</span>
+      <span style="color:#e67e22">可选怪(optional)</span>
+      <span style="color:#9b59b6">守卫(guard)</span>
+      <span style="color:#7f8c8d">装饰怪</span>
+      <span style="color:#f1c40f">宝箱</span>
+      <span style="color:#e74c3c">Boss</span>
+      <span style="color:#1abc9c">同伴</span>
+    </div>
+  </div>
+  <div class="panel" id="panel"></div>
+</div>
+</body>
+</html>

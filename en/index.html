@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Dragon Awakening Island</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 100%; height: 100%; overflow: hidden;
+        background: radial-gradient(circle at 50% 35%, #20351f 0%, #0e1410 100%);
+        font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      #game-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+      #game-container canvas { max-width: 100%; max-height: 100%; }
+
+      /* 竖屏适配：横屏小屏（手机）时提示旋转 */
+      #rotate-hint {
+        display: none;
+        position: fixed; inset: 0; z-index: 9999;
+        flex-direction: column; justify-content: center; align-items: center;
+        gap: 18px; color: #f1f5e9; text-align: center;
+        background: radial-gradient(circle at 50% 40%, #20351f 0%, #0a0f0c 100%);
+      }
+      #rotate-hint .icon { font-size: 64px; animation: rotate-bob 1.6s ease-in-out infinite; }
+      #rotate-hint .text { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+      @keyframes rotate-bob {
+        0%, 100% { transform: rotate(-12deg); }
+        50% { transform: rotate(78deg); }
+      }
+      @media (orientation: landscape) and (max-height: 600px) {
+        #game-container { display: none; }
+        #rotate-hint { display: flex; }
+      }
+    </style>
+    <script type="module" crossorigin src="/hero-level-up/en/assets/main-MeOHkzUO.js"></script>
+    <link rel="modulepreload" crossorigin href="/hero-level-up/en/assets/level.map-Dt6ZXuPX.js">
+    <link rel="modulepreload" crossorigin href="/hero-level-up/en/assets/Game-eRHSuDMf.js">
+    <link rel="stylesheet" crossorigin href="/hero-level-up/en/assets/Game-DNJkxWMZ.css">
+  </head>
+  <body>
+    <div id="game-container"></div>
+    <div id="rotate-hint">
+      <div class="icon">📱</div>
+      <div class="text">Please play in portrait mode</div>
+    </div>
+  </body>
+</html>

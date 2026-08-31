@@ -1,0 +1,1 @@
+import"./level.map-Dt6ZXuPX.js";import{n as e,t}from"./Game-eRHSuDMf.js";import{t as n}from"./level.hardcore.map-CfZdkxV-.js";var r=e(n),i=document.getElementById(`game-container`);if(!i)throw Error(`#game-container not found`);i.style.position=`relative`,i.style.display=`block`,new t(i,{mode:`hardcore`,level:r});
